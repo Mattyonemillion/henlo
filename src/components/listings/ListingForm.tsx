@@ -240,7 +240,7 @@ export default function ListingForm({
       {/* Images */}
       <div className="space-y-2">
         <Label>
-          Foto's <span className="text-red-500">*</span>
+          Foto&apos;s <span className="text-red-500">*</span>
         </Label>
         <ImageUpload
           onImagesChange={setImages}

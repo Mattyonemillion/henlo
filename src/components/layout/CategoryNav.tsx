@@ -56,3 +56,5 @@ export function CategoryNav() {
     </div>
   )
 }
+
+export default CategoryNav

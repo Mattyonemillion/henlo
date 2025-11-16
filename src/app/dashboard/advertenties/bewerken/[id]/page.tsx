@@ -206,7 +206,7 @@ export default function EditListingPage() {
         {/* Existing Images */}
         {existingImages.length > 0 && (
           <div>
-            <label className="block text-sm font-medium mb-2">Huidige foto's</label>
+            <label className="block text-sm font-medium mb-2">Huidige foto&apos;s</label>
             <div className="grid grid-cols-4 gap-4 mb-4">
               {existingImages.map((url, index) => (
                 <div key={index} className="relative aspect-square">
@@ -231,11 +231,10 @@ export default function EditListingPage() {
         {/* New Images */}
         <div>
           <label className="block text-sm font-medium mb-2">
-            Nieuwe foto's toevoegen (max {10 - existingImages.length})
+            Nieuwe foto&apos;s toevoegen (max {10 - existingImages.length})
           </label>
           <ImageUpload
-            images={images}
-            onChange={setImages}
+            onImagesChange={setImages}
             maxImages={10 - existingImages.length}
           />
         </div>
