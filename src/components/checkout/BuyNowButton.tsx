@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { toast } from '@/components/ui/toast'
 import { ShoppingCart, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -26,23 +27,23 @@ export function BuyNowButton({
   fullWidth = false,
 }: BuyNowButtonProps) {
   const [isProcessing, setIsProcessing] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
   const handleBuyNow = async () => {
     setIsProcessing(true)
-    setError(null)
 
     try {
       // Check if user is authenticated
       const { data: { user } } = await supabase.auth.getUser()
 
       if (!user) {
-        // Redirect to login with return URL
+        toast.error('Log eerst in om een aankoop te doen')
         router.push(`/login?redirect=/advertenties/${listingId}`)
         return
       }
+
+      toast.loading('Checkout voorbereiden...', { duration: 2000 })
 
       // Call checkout API
       const response = await fetch('/api/checkout', {
@@ -61,42 +62,38 @@ export function BuyNowButton({
 
       // Redirect to Mollie checkout
       if (data.checkoutUrl) {
+        toast.success('Doorverwijzen naar betaling...')
         window.location.href = data.checkoutUrl
       } else {
         throw new Error('No checkout URL received')
       }
     } catch (err) {
       console.error('Checkout error:', err)
-      setError(err instanceof Error ? err.message : 'Er is iets misgegaan')
+      const errorMessage = err instanceof Error ? err.message : 'Er is iets misgegaan bij het afrekenen'
+      toast.error(errorMessage)
       setIsProcessing(false)
     }
   }
 
   return (
-    <div className={fullWidth ? 'w-full' : ''}>
-      <Button
-        onClick={handleBuyNow}
-        disabled={isProcessing}
-        size={size}
-        variant={variant}
-        className={`${fullWidth ? 'w-full' : ''} ${className || ''}`}
-      >
-        {isProcessing ? (
-          <>
-            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-            Verwerken...
-          </>
-        ) : (
-          <>
-            <ShoppingCart className="w-5 h-5 mr-2" />
-            Koop nu - €{price.toFixed(2)}
-          </>
-        )}
-      </Button>
-
-      {error && (
-        <p className="text-sm text-red-600 mt-2">{error}</p>
+    <Button
+      onClick={handleBuyNow}
+      disabled={isProcessing}
+      size={size}
+      variant={variant}
+      className={`${fullWidth ? 'w-full' : ''} ${className || ''}`}
+    >
+      {isProcessing ? (
+        <>
+          <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 mr-2 animate-spin" />
+          <span className="text-sm sm:text-base">Verwerken...</span>
+        </>
+      ) : (
+        <>
+          <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+          <span className="text-sm sm:text-base">Koop nu - €{price.toFixed(2)}</span>
+        </>
       )}
-    </div>
+    </Button>
   )
 }

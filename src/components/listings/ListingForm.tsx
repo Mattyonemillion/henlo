@@ -15,6 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { FormError } from '@/components/ui/error-message'
+import { toast } from '@/components/ui/toast'
 import ImageUpload from './ImageUpload'
 import { Loader2 } from 'lucide-react'
 
@@ -98,6 +100,7 @@ export default function ListingForm({
     // Validate images
     if (images.length === 0 && existingImages.length === 0) {
       setImageError('Voeg minimaal 1 afbeelding toe')
+      toast.error('Voeg minimaal 1 afbeelding toe')
       return
     }
 
@@ -106,15 +109,21 @@ export default function ListingForm({
 
     try {
       await onSubmit(data, images)
+      toast.success(
+        initialData
+          ? 'Advertentie succesvol bijgewerkt!'
+          : 'Advertentie succesvol geplaatst!'
+      )
     } catch (error) {
       console.error('Error submitting form:', error)
+      toast.error('Er ging iets mis bij het opslaan. Probeer het opnieuw.')
     } finally {
       setIsSubmitting(false)
     }
   }
 
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4 sm:space-y-6">
       {/* Title */}
       <div className="space-y-2">
         <Label htmlFor="title">
@@ -124,11 +133,9 @@ export default function ListingForm({
           id="title"
           placeholder="Bijv. iPhone 13 Pro in perfecte staat"
           {...register('title')}
-          className={errors.title ? 'border-red-500' : ''}
+          className={errors.title ? 'border-red-500 focus:ring-red-500' : ''}
         />
-        {errors.title && (
-          <p className="text-sm text-red-500">{errors.title.message}</p>
-        )}
+        <FormError message={errors.title?.message} />
       </div>
 
       {/* Description */}
@@ -141,11 +148,9 @@ export default function ListingForm({
           placeholder="Geef een gedetailleerde beschrijving van het artikel..."
           rows={6}
           {...register('description')}
-          className={errors.description ? 'border-red-500' : ''}
+          className={errors.description ? 'border-red-500 focus:ring-red-500' : ''}
         />
-        {errors.description && (
-          <p className="text-sm text-red-500">{errors.description.message}</p>
-        )}
+        <FormError message={errors.description?.message} />
       </div>
 
       {/* Price */}
@@ -159,15 +164,13 @@ export default function ListingForm({
           step="0.01"
           placeholder="0.00"
           {...register('price', { valueAsNumber: true })}
-          className={errors.price ? 'border-red-500' : ''}
+          className={errors.price ? 'border-red-500 focus:ring-red-500' : ''}
         />
-        {errors.price && (
-          <p className="text-sm text-red-500">{errors.price.message}</p>
-        )}
+        <FormError message={errors.price?.message} />
       </div>
 
       {/* Condition and Category Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         {/* Condition */}
         <div className="space-y-2">
           <Label>
@@ -179,7 +182,7 @@ export default function ListingForm({
               setValue('condition', value as ListingFormData['condition'])
             }
           >
-            <SelectTrigger className={errors.condition ? 'border-red-500' : ''}>
+            <SelectTrigger className={errors.condition ? 'border-red-500 focus:ring-red-500' : ''}>
               <SelectValue placeholder="Selecteer staat" />
             </SelectTrigger>
             <SelectContent>
@@ -190,9 +193,7 @@ export default function ListingForm({
               ))}
             </SelectContent>
           </Select>
-          {errors.condition && (
-            <p className="text-sm text-red-500">{errors.condition.message}</p>
-          )}
+          <FormError message={errors.condition?.message} />
         </div>
 
         {/* Category */}
@@ -204,7 +205,7 @@ export default function ListingForm({
             value={category}
             onValueChange={(value) => setValue('category', value)}
           >
-            <SelectTrigger className={errors.category ? 'border-red-500' : ''}>
+            <SelectTrigger className={errors.category ? 'border-red-500 focus:ring-red-500' : ''}>
               <SelectValue placeholder="Selecteer categorie" />
             </SelectTrigger>
             <SelectContent>
@@ -215,9 +216,7 @@ export default function ListingForm({
               ))}
             </SelectContent>
           </Select>
-          {errors.category && (
-            <p className="text-sm text-red-500">{errors.category.message}</p>
-          )}
+          <FormError message={errors.category?.message} />
         </div>
       </div>
 
@@ -230,11 +229,9 @@ export default function ListingForm({
           id="location"
           placeholder="Bijv. Amsterdam"
           {...register('location')}
-          className={errors.location ? 'border-red-500' : ''}
+          className={errors.location ? 'border-red-500 focus:ring-red-500' : ''}
         />
-        {errors.location && (
-          <p className="text-sm text-red-500">{errors.location.message}</p>
-        )}
+        <FormError message={errors.location?.message} />
       </div>
 
       {/* Images */}
@@ -246,15 +243,15 @@ export default function ListingForm({
           onImagesChange={setImages}
           existingImages={existingImages}
         />
-        {imageError && <p className="text-sm text-red-500">{imageError}</p>}
+        <FormError message={imageError} />
       </div>
 
       {/* Submit Button */}
-      <div className="flex gap-4 pt-4">
+      <div className="flex gap-3 sm:gap-4 pt-4">
         <Button
           type="submit"
           disabled={isSubmitting}
-          className="flex-1 md:flex-none md:min-w-[200px]"
+          className="flex-1 sm:flex-none sm:min-w-[200px]"
         >
           {isSubmitting ? (
             <>
