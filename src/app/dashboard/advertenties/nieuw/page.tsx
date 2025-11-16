@@ -142,8 +142,8 @@ export default function NewListingPage() {
 
         {/* Images */}
         <div>
-          <label className="block text-sm font-medium mb-2">Foto's (max 10)</label>
-          <ImageUpload images={images} onChange={setImages} maxImages={10} />
+          <label className="block text-sm font-medium mb-2">Foto&apos;s (max 10)</label>
+          <ImageUpload onImagesChange={setImages} maxImages={10} />
         </div>
 
         {/* Shipping */}
