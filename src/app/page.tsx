@@ -1,7 +1,27 @@
+import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import ListingGrid from '@/components/listings/ListingGrid'
 import SearchBar from '@/components/layout/SearchBar'
 import CategoryNav from '@/components/layout/CategoryNav'
+
+function SearchBarFallback() {
+  return (
+    <div className="flex w-full gap-2 max-w-2xl mx-auto">
+      <div className="flex-1 h-12 bg-white/20 rounded-md animate-pulse" />
+      <div className="h-12 w-24 bg-white/20 rounded-md animate-pulse" />
+    </div>
+  )
+}
+
+function CategoryNavFallback() {
+  return (
+    <div className="flex gap-2 overflow-hidden">
+      {[...Array(6)].map((_, i) => (
+        <div key={i} className="h-8 w-24 bg-gray-200 rounded-md animate-pulse" />
+      ))}
+    </div>
+  )
+}
 
 export default async function HomePage({
   searchParams,
@@ -38,14 +58,18 @@ export default async function HomePage({
           <p className="text-xl mb-8 text-center text-primary-100">
             Duurzaam en voordelig
           </p>
-          <SearchBar />
+          <Suspense fallback={<SearchBarFallback />}>
+            <SearchBar />
+          </Suspense>
         </div>
       </section>
 
       {/* Categories */}
       <section className="border-b">
         <div className="container mx-auto px-4 py-4">
-          <CategoryNav />
+          <Suspense fallback={<CategoryNavFallback />}>
+            <CategoryNav />
+          </Suspense>
         </div>
       </section>
 

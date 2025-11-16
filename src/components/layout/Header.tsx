@@ -1,11 +1,20 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { SearchBar } from './SearchBar'
 import { Button } from '@/components/ui/button'
 import { Menu, X, Plus, MessageSquare, Heart, LayoutDashboard } from 'lucide-react'
+
+function SearchBarFallback() {
+  return (
+    <div className="flex w-full gap-2">
+      <div className="flex-1 h-10 bg-gray-100 rounded-md animate-pulse" />
+      <div className="h-10 w-20 bg-gray-100 rounded-md animate-pulse" />
+    </div>
+  )
+}
 
 export function Header() {
   const { user, loading } = useAuth()
@@ -22,7 +31,9 @@ export function Header() {
 
           {/* Search Bar - Hidden on mobile */}
           <div className="hidden lg:flex flex-1 max-w-2xl mx-6 xl:mx-8">
-            <SearchBar />
+            <Suspense fallback={<SearchBarFallback />}>
+              <SearchBar />
+            </Suspense>
           </div>
 
           {/* Desktop Navigation */}
@@ -89,7 +100,9 @@ export function Header() {
 
         {/* Mobile Search Bar */}
         <div className="pb-3 lg:hidden">
-          <SearchBar />
+          <Suspense fallback={<SearchBarFallback />}>
+            <SearchBar />
+          </Suspense>
         </div>
 
         {/* Mobile Menu */}
