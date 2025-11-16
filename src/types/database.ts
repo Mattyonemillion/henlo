@@ -61,7 +61,7 @@ export type Database = {
       listings: {
         Row: {
           id: string
-          user_id: string
+          seller_id: string
           title: string
           slug: string
           description: string
@@ -69,16 +69,21 @@ export type Database = {
           price: number
           condition: 'new' | 'like_new' | 'good' | 'fair' | 'poor'
           location: string
+          postal_code: string | null
           primary_image: string | null
           images: string[]
-          status: 'active' | 'sold' | 'inactive'
+          shipping_available: boolean
+          pickup_available: boolean
+          shipping_cost: number
+          status: 'draft' | 'active' | 'sold' | 'reserved' | 'expired' | 'removed'
           views: number
+          favorites_count: number
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
-          user_id: string
+          seller_id: string
           title: string
           slug: string
           description: string
@@ -86,16 +91,21 @@ export type Database = {
           price: number
           condition: 'new' | 'like_new' | 'good' | 'fair' | 'poor'
           location: string
+          postal_code?: string | null
           primary_image?: string | null
           images?: string[]
-          status?: 'active' | 'sold' | 'inactive'
+          shipping_available?: boolean
+          pickup_available?: boolean
+          shipping_cost?: number
+          status?: 'draft' | 'active' | 'sold' | 'reserved' | 'expired' | 'removed'
           views?: number
+          favorites_count?: number
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
-          user_id?: string
+          seller_id?: string
           title?: string
           slug?: string
           description?: string
@@ -103,10 +113,15 @@ export type Database = {
           price?: number
           condition?: 'new' | 'like_new' | 'good' | 'fair' | 'poor'
           location?: string
+          postal_code?: string | null
           primary_image?: string | null
           images?: string[]
-          status?: 'active' | 'sold' | 'inactive'
+          shipping_available?: boolean
+          pickup_available?: boolean
+          shipping_cost?: number
+          status?: 'draft' | 'active' | 'sold' | 'reserved' | 'expired' | 'removed'
           views?: number
+          favorites_count?: number
           created_at?: string
           updated_at?: string
         }
