@@ -7,6 +7,9 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { toast } from '@/components/ui/toast'
+import { ErrorMessage } from '@/components/ui/error-message'
+import { ListingDetailSkeleton } from '@/components/skeletons/ListingSkeleton'
 import {
   MapPin,
   Calendar,
@@ -18,7 +21,6 @@ import {
   ChevronRight,
   MessageCircle,
   User,
-  Loader2,
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { nl } from 'date-fns/locale'
@@ -28,6 +30,7 @@ export default function ListingDetailPage() {
   const router = useRouter()
   const [listing, setListing] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [isFavorite, setIsFavorite] = useState(false)
   const supabase = createClient()
@@ -38,91 +41,133 @@ export default function ListingDetailPage() {
 
   const fetchListing = async () => {
     setLoading(true)
+    setError(null)
 
-    const { data, error } = await supabase
-      .from('listings')
-      .select('*, profiles(*), categories(*)')
-      .eq('id', params.id)
-      .single()
+    try {
+      const { data, error } = await supabase
+        .from('listings')
+        .select('*, profiles(*), categories(*)')
+        .eq('id', params.id)
+        .single()
 
-    if (!error && data) {
-      setListing(data)
+      if (error) throw error
+
+      if (data) {
+        setListing(data)
+      } else {
+        setError('Advertentie niet gevonden')
+      }
+    } catch (err: any) {
+      console.error('Error fetching listing:', err)
+      setError('Er ging iets mis bij het laden van de advertentie')
+      toast.error('Kon de advertentie niet laden')
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   const handleContactSeller = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user) {
-      router.push('/login')
-      return
-    }
+      if (!user) {
+        toast.error('Log eerst in om contact op te nemen')
+        router.push('/login')
+        return
+      }
 
-    // Create or get conversation
-    const { data: conversation } = await supabase
-      .from('conversations')
-      .select('*')
-      .eq('listing_id', listing.id)
-      .eq('buyer_id', user.id)
-      .single()
-
-    if (conversation) {
-      router.push(`/dashboard/berichten/${conversation.id}`)
-    } else {
-      const { data: newConversation } = await supabase
+      // Create or get conversation
+      const { data: conversation } = await supabase
         .from('conversations')
-        .insert({
-          listing_id: listing.id,
-          seller_id: listing.user_id,
-          buyer_id: user.id,
-        })
-        .select()
+        .select('*')
+        .eq('listing_id', listing.id)
+        .eq('buyer_id', user.id)
         .single()
 
-      if (newConversation) {
-        router.push(`/dashboard/berichten/${newConversation.id}`)
+      if (conversation) {
+        router.push(`/dashboard/berichten/${conversation.id}`)
+      } else {
+        const { data: newConversation, error } = await supabase
+          .from('conversations')
+          .insert({
+            listing_id: listing.id,
+            seller_id: listing.user_id,
+            buyer_id: user.id,
+          })
+          .select()
+          .single()
+
+        if (error) throw error
+
+        if (newConversation) {
+          toast.success('Gesprek gestart!')
+          router.push(`/dashboard/berichten/${newConversation.id}`)
+        }
       }
+    } catch (err) {
+      console.error('Error contacting seller:', err)
+      toast.error('Kon geen contact maken. Probeer het opnieuw.')
     }
   }
 
   const handleToggleFavorite = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user) {
-      router.push('/login')
-      return
-    }
+      if (!user) {
+        toast.error('Log eerst in om favorieten op te slaan')
+        router.push('/login')
+        return
+      }
 
-    if (isFavorite) {
-      await supabase
-        .from('favorites')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('listing_id', listing.id)
-      setIsFavorite(false)
-    } else {
-      await supabase
-        .from('favorites')
-        .insert({
-          user_id: user.id,
-          listing_id: listing.id,
-        })
-      setIsFavorite(true)
+      if (isFavorite) {
+        const { error } = await supabase
+          .from('favorites')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('listing_id', listing.id)
+
+        if (error) throw error
+
+        setIsFavorite(false)
+        toast.success('Verwijderd uit favorieten')
+      } else {
+        const { error } = await supabase
+          .from('favorites')
+          .insert({
+            user_id: user.id,
+            listing_id: listing.id,
+          })
+
+        if (error) throw error
+
+        setIsFavorite(true)
+        toast.success('Toegevoegd aan favorieten')
+      }
+    } catch (err) {
+      console.error('Error toggling favorite:', err)
+      toast.error('Er ging iets mis. Probeer het opnieuw.')
     }
   }
 
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: listing.title,
-        text: listing.description,
-        url: window.location.href,
-      })
-    } else {
-      navigator.clipboard.writeText(window.location.href)
-      // You could add a toast notification here
+  const handleShare = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: listing.title,
+          text: listing.description,
+          url: window.location.href,
+        })
+        toast.success('Gedeeld!')
+      } else {
+        await navigator.clipboard.writeText(window.location.href)
+        toast.success('Link gekopieerd naar klembord')
+      }
+    } catch (err: any) {
+      // User cancelled share dialog
+      if (err.name !== 'AbortError') {
+        toast.error('Kon niet delen')
+      }
     }
   }
 
@@ -144,17 +189,24 @@ export default function ListingDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
+      <div className="min-h-screen bg-gray-50 py-4 sm:py-6 md:py-8">
+        <div className="container mx-auto px-3 sm:px-4 lg:px-6">
+          <ListingDetailSkeleton />
+        </div>
       </div>
     )
   }
 
-  if (!listing) {
+  if (error || !listing) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Advertentie niet gevonden</h1>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <ErrorMessage
+            title="Advertentie niet gevonden"
+            message={error || 'Deze advertentie bestaat niet of is verwijderd.'}
+            variant="card"
+            className="mb-6"
+          />
           <Link href="/advertenties">
             <Button>Terug naar advertenties</Button>
           </Link>
@@ -167,10 +219,10 @@ export default function ListingDetailPage() {
   const hasImages = images.length > 0
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4">
+    <div className="min-h-screen bg-gray-50 py-4 sm:py-6 md:py-8">
+      <div className="container mx-auto px-3 sm:px-4 lg:px-6">
         {/* Breadcrumb */}
-        <nav className="mb-6 text-sm text-gray-600">
+        <nav className="mb-4 sm:mb-6 text-xs sm:text-sm text-gray-600 overflow-x-auto whitespace-nowrap">
           <Link href="/" className="hover:text-primary-600">
             Home
           </Link>
@@ -193,9 +245,9 @@ export default function ListingDetailPage() {
           <span className="text-gray-900">{listing.title}</span>
         </nav>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
             {/* Image Gallery */}
             <Card>
               <CardContent className="p-0">
@@ -206,6 +258,7 @@ export default function ListingDetailPage() {
                         src={images[currentImageIndex]}
                         alt={listing.title}
                         fill
+                        sizes="(max-width: 1024px) 100vw, 66vw"
                         className="object-contain"
                         priority
                       />
@@ -266,9 +319,9 @@ export default function ListingDetailPage() {
 
             {/* Description */}
             <Card>
-              <CardContent className="p-6">
-                <h2 className="text-xl font-bold mb-4">Beschrijving</h2>
-                <p className="text-gray-700 whitespace-pre-wrap">
+              <CardContent className="p-4 sm:p-6">
+                <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Beschrijving</h2>
+                <p className="text-sm sm:text-base text-gray-700 whitespace-pre-wrap">
                   {listing.description}
                 </p>
               </CardContent>
@@ -276,9 +329,9 @@ export default function ListingDetailPage() {
 
             {/* Details */}
             <Card>
-              <CardContent className="p-6">
-                <h2 className="text-xl font-bold mb-4">Details</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <CardContent className="p-4 sm:p-6">
+                <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Details</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div className="flex items-center gap-3">
                     <Package className="w-5 h-5 text-gray-400" />
                     <div>
@@ -326,22 +379,22 @@ export default function ListingDetailPage() {
 
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            <div className="sticky top-4 space-y-4">
+            <div className="lg:sticky lg:top-20 space-y-4">
               {/* Price Card */}
               <Card>
-                <CardContent className="p-6">
-                  <div className="text-3xl font-bold text-primary-600 mb-6">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="text-2xl sm:text-3xl font-bold text-primary-600 mb-4 sm:mb-6">
                     €{listing.price.toFixed(2)}
                   </div>
 
-                  <div className="space-y-3">
+                  <div className="space-y-2 sm:space-y-3">
                     <Button
                       onClick={handleContactSeller}
                       className="w-full"
                       size="lg"
                     >
-                      <MessageCircle className="w-5 h-5 mr-2" />
-                      Contact met verkoper
+                      <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                      <span className="text-sm sm:text-base">Contact met verkoper</span>
                     </Button>
 
                     <div className="grid grid-cols-2 gap-2">
@@ -351,16 +404,16 @@ export default function ListingDetailPage() {
                         className="w-full"
                       >
                         <Heart
-                          className={`w-5 h-5 mr-2 ${
+                          className={`w-4 h-4 sm:w-5 sm:h-5 sm:mr-2 ${
                             isFavorite ? 'fill-red-500 text-red-500' : ''
                           }`}
                         />
-                        Bewaren
+                        <span className="hidden sm:inline text-sm sm:text-base">Bewaren</span>
                       </Button>
 
                       <Button onClick={handleShare} variant="outline" className="w-full">
-                        <Share2 className="w-5 h-5 mr-2" />
-                        Delen
+                        <Share2 className="w-4 h-4 sm:w-5 sm:h-5 sm:mr-2" />
+                        <span className="hidden sm:inline text-sm sm:text-base">Delen</span>
                       </Button>
                     </div>
                   </div>
@@ -370,8 +423,8 @@ export default function ListingDetailPage() {
               {/* Seller Card */}
               {listing.profiles && (
                 <Card>
-                  <CardContent className="p-6">
-                    <h3 className="font-bold mb-4">Verkoper</h3>
+                  <CardContent className="p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-bold mb-3 sm:mb-4">Verkoper</h3>
                     <div className="flex items-center gap-3 mb-4">
                       {listing.profiles.avatar_url ? (
                         <Image
@@ -414,9 +467,9 @@ export default function ListingDetailPage() {
 
               {/* Safety Tips */}
               <Card className="bg-blue-50 border-blue-200">
-                <CardContent className="p-6">
-                  <h3 className="font-bold mb-2 text-blue-900">Veilig handelen</h3>
-                  <ul className="text-sm text-blue-800 space-y-2">
+                <CardContent className="p-4 sm:p-6">
+                  <h3 className="text-base sm:text-lg font-bold mb-2 text-blue-900">Veilig handelen</h3>
+                  <ul className="text-xs sm:text-sm text-blue-800 space-y-1.5 sm:space-y-2">
                     <li>• Ontmoet op een openbare plaats</li>
                     <li>• Controleer het product voor betaling</li>
                     <li>• Betaal nooit vooraf via een link</li>
