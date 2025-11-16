@@ -1,3 +1,14 @@
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Authenticatie',
+  description: 'Log in of registreer op Henlo om advertenties te plaatsen en te kopen.',
+  robots: {
+    index: false,
+    follow: false,
+  },
+}
+
 export default function AuthLayout({
   children,
 }: {
