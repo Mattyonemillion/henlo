@@ -11,6 +11,9 @@ import {
   Settings
 } from 'lucide-react'
 
+// Note: Metadata cannot be exported from client components
+// This layout is client-side only for navigation
+
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Advertenties', href: '/dashboard/advertenties', icon: Package },
