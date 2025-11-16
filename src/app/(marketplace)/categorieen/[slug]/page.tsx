@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
@@ -8,6 +8,15 @@ import ListingGrid from '@/components/listings/ListingGrid'
 import ListingFilters, { FilterValues } from '@/components/listings/ListingFilters'
 import SearchBar from '@/components/layout/SearchBar'
 import { Loader2, ChevronRight } from 'lucide-react'
+
+function SearchBarFallback() {
+  return (
+    <div className="flex w-full gap-2">
+      <div className="flex-1 h-10 bg-gray-100 rounded-md animate-pulse" />
+      <div className="h-10 w-20 bg-gray-100 rounded-md animate-pulse" />
+    </div>
+  )
+}
 
 export default function CategoryPage() {
   const params = useParams()
@@ -121,7 +130,9 @@ export default function CategoryPage() {
             </div>
           </div>
 
-          <SearchBar />
+          <Suspense fallback={<SearchBarFallback />}>
+            <SearchBar />
+          </Suspense>
         </div>
       </section>
 

@@ -1,11 +1,20 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import ListingGrid from '@/components/listings/ListingGrid'
 import ListingFilters, { FilterValues } from '@/components/listings/ListingFilters'
 import SearchBar from '@/components/layout/SearchBar'
 import { Loader2 } from 'lucide-react'
+
+function SearchBarFallback() {
+  return (
+    <div className="flex w-full gap-2">
+      <div className="flex-1 h-10 bg-gray-100 rounded-md animate-pulse" />
+      <div className="h-10 w-20 bg-gray-100 rounded-md animate-pulse" />
+    </div>
+  )
+}
 
 export default function AdvertentiesPage() {
   const [listings, setListings] = useState<any[]>([])
@@ -62,7 +71,9 @@ export default function AdvertentiesPage() {
       <section className="bg-white border-b">
         <div className="container mx-auto px-4 py-8">
           <h1 className="text-3xl font-bold mb-4">Alle advertenties</h1>
-          <SearchBar />
+          <Suspense fallback={<SearchBarFallback />}>
+            <SearchBar />
+          </Suspense>
         </div>
       </section>
 

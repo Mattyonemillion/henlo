@@ -34,9 +34,7 @@ const listingSchema = z.object({
     .number()
     .min(0, 'Prijs moet positief zijn')
     .max(1000000, 'Prijs mag niet meer dan €1.000.000 zijn'),
-  condition: z.enum(['new', 'like_new', 'good', 'fair', 'poor'], {
-    required_error: 'Selecteer een staat',
-  }),
+  condition: z.enum(['new', 'like_new', 'good', 'fair', 'poor'], 'Selecteer een staat'),
   category: z.string().min(1, 'Selecteer een categorie'),
   location: z
     .string()
