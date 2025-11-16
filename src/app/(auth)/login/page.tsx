@@ -4,6 +4,9 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { toast } from '@/components/ui/toast'
+import { ErrorMessage } from '@/components/ui/error-message'
+import { Loader2 } from 'lucide-react'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -18,33 +21,42 @@ export default function LoginPage() {
     setLoading(true)
     setError(null)
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
-    if (error) {
-      setError(error.message)
+      if (error) {
+        setError(error.message)
+        toast.error('Inloggen mislukt. Controleer je gegevens.')
+      } else {
+        toast.success('Succesvol ingelogd!')
+        router.push('/dashboard')
+        router.refresh()
+      }
+    } catch (err) {
+      setError('Er ging iets mis. Probeer het opnieuw.')
+      toast.error('Er ging iets mis. Probeer het opnieuw.')
+    } finally {
       setLoading(false)
-    } else {
-      router.push('/dashboard')
-      router.refresh()
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-6 sm:space-y-8">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          <h2 className="mt-4 sm:mt-6 text-center text-2xl sm:text-3xl font-extrabold text-gray-900">
             Inloggen
           </h2>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleLogin}>
+        <form className="mt-6 sm:mt-8 space-y-4 sm:space-y-6" onSubmit={handleLogin}>
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded">
-              {error}
-            </div>
+            <ErrorMessage
+              message={error}
+              variant="banner"
+            />
           )}
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
@@ -94,8 +106,9 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+              className="group relative w-full flex justify-center items-center gap-2 py-2.5 sm:py-3 px-4 border border-transparent text-sm sm:text-base font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
+              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
               {loading ? 'Bezig met inloggen...' : 'Inloggen'}
             </button>
           </div>
